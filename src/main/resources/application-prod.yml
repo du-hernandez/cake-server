@@ -1,0 +1,61 @@
+# src/main/resources/application-prod.yml
+# Configuración para PRODUCCIÓN
+
+spring:
+  # Base de datos - producción
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20  # Más conexiones para producción
+      minimum-idle: 10
+
+  # JPA/Hibernate para producción
+  jpa:
+    hibernate:
+      ddl-auto: validate  # NUNCA modificar esquema en producción
+    show-sql: false       # NO mostrar SQL
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  # DevTools desactivado
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+
+# Logging mínimo para producción
+logging:
+  level:
+    root: WARN
+    com.altico.cakeserver: INFO
+    org.springframework: WARN
+  file:
+    name: /var/log/cake-server/app.log
+
+# Actuator - solo health y metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Seguridad adicional
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+# Mensaje personalizado
+app:
+  environment: "PRODUCTION"
+  debug: false

@@ -104,41 +104,41 @@ management:
     health:
       show-details: when-authorized
 
-# Perfiles de configuración
----
-# Perfil de desarrollo
-spring:
-  config:
-    activate:
-      on-profile: dev
-  jpa:
-    show-sql: true
-    hibernate:
-      ddl-auto: update
-  flyway:
-    clean-disabled: false  # Permitir limpiar BD en desarrollo
-
----
-# Perfil de producción
-spring:
-  config:
-    activate:
-      on-profile: prod
-  jpa:
-    show-sql: false
-    hibernate:
-      ddl-auto: validate
-  datasource:
-    hikari:
-      maximum-pool-size: 20
-
----
-# Perfil de testing
-spring:
-  config:
-    activate:
-      on-profile: test
-  datasource:
-    url: jdbc:tc:postgresql:15:///test_db
-  flyway:
-    enabled: false  # Usar @Sql o datos de prueba específicos
+## Perfiles de configuración
+#---
+## Perfil de desarrollo
+#spring:
+#  config:
+#    activate:
+#      on-profile: dev
+#  jpa:
+#    show-sql: true
+#    hibernate:
+#      ddl-auto: update
+#  flyway:
+#    clean-disabled: false  # Permitir limpiar BD en desarrollo
+#
+#---
+## Perfil de producción
+#spring:
+#  config:
+#    activate:
+#      on-profile: prod
+#  jpa:
+#    show-sql: false
+#    hibernate:
+#      ddl-auto: validate
+#  datasource:
+#    hikari:
+#      maximum-pool-size: 20
+#
+#---
+## Perfil de testing
+#spring:
+#  config:
+#    activate:
+#      on-profile: test
+#  datasource:
+#    url: jdbc:tc:postgresql:15:///test_db
+#  flyway:
+#    enabled: false  # Usar @Sql o datos de prueba específicos

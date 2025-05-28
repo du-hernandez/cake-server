@@ -1,0 +1,50 @@
+# src/main/resources/application-dev.yml
+# Configuración para DESARROLLO
+
+spring:
+  # Base de datos - desarrollo local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${DB_NAME:postgres}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+
+  # JPA/Hibernate para desarrollo
+  jpa:
+    hibernate:
+      ddl-auto: update  # Actualiza esquema automáticamente
+    show-sql: true      # Muestra SQL en consola
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # DevTools activo
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+# Logging detallado para desarrollo
+logging:
+  level:
+    root: INFO
+    com.altico.cakeserver: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+
+# Actuator - todos los endpoints expuestos
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Mensaje personalizado
+app:
+  environment: "DEVELOPMENT"
+  debug: true
