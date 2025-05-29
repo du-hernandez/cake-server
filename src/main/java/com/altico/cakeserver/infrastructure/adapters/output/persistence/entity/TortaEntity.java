@@ -2,8 +2,8 @@ package com.altico.cakeserver.infrastructure.adapters.output.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -44,7 +44,8 @@ public class TortaEntity {
     private Set<TortaOcasionEntity> tortaOcasiones = new HashSet<>();
 
     // Relación con Imágenes
-    @OneToMany(mappedBy = "torta", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "torta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("fechaCreado DESC")
     private Set<ImagenEntity> imagenes = new HashSet<>();
 
     // Constructor con parámetros esenciales
