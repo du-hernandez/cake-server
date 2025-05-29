@@ -1,0 +1,42 @@
+# src/main/resources/application-test.yml
+# Configuración para TESTING
+
+spring:
+  # Base de datos en memoria para tests
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA/Hibernate para testing
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Recrear BD para cada test
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # H2 Console (útil para debugging)
+  h2:
+    console:
+      enabled: true
+
+# Logging para tests
+logging:
+  level:
+    root: WARN
+    com.altico.cakeserver: DEBUG
+    org.springframework.test: DEBUG
+
+# Desactivar métricas en tests
+management:
+  metrics:
+    enable:
+      all: false
+
+# Mensaje personalizado
+app:
+  environment: "TESTING"
+  debug: true
