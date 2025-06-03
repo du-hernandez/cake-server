@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableJpaAuditing
 @ComponentScan(basePackageClasses = CakeServerApplication.class)
 @EnableJpaRepositories(basePackages = "com.altico.cakeserver.infrastructure.adapters.output.persistence.repository")
-@EntityScan(basePackages = "com.cesarlead.inventory.infrastructure.adapters.output.persistence.entity")
+@EntityScan(basePackages = "com.altico.cakeserver.infrastructure.adapters.output.persistence.entity")
 public class ApplicationConfig {
     // La configuración principal de la aplicación
     // Spring Boot auto-configurará la mayoría de los beans necesarios

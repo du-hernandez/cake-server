@@ -42,19 +42,19 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+        format_sql: false
+        show_sql: false
+        order_inserts: true
+        order_updates: true
         jdbc:
           lob:
             non_contextual_creation: true
           batch_size: 25
-        order_inserts: true
-        order_updates: true
         # Cache de segundo nivel (si usas Redis)
         cache:
           use_second_level_cache: true
           region:
             factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
-    show-sql: false  # true solo en desarrollo
     open-in-view: false  # Mejor práctica para evitar lazy loading issues
   flyway:
     enabled: true
@@ -63,6 +63,7 @@ spring:
     schemas: public
     validate-on-migrate: true
     clean-disabled: true  # Permitir limpiar BD en desarrollo
+
 
   # Configuración de Redis (Cache)
   data:
