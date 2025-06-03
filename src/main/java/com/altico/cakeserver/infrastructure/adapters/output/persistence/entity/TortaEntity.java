@@ -28,7 +28,7 @@ public class TortaEntity {
     @Column(name = "descripcion", nullable = false)
     private String descripcion;
 
-    @Column(name = "imagen")
+    @Column(name = "imagen", nullable = false, length = 500)
     private String imagen;
 
     @Column(name = "fecha_creado", nullable = false, updatable = false)

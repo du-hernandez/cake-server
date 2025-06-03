@@ -23,7 +23,7 @@ public class ImagenEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "url", nullable = false, length = 255)
+    @Column(name = "url", nullable = false, length = 500)
     private String url;
 
     @Column(name = "fecha_creado", nullable = false, updatable = false)
