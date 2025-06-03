@@ -15,6 +15,9 @@ public class DomainDtoMapper {
     public Torta toDomain(CreateTortaCommand command) {
         return Torta.crear(command.descripcion(), command.imagen());
     }
+    public Torta toDomain(UpdateTortaCommand command) {
+        return Torta.crear(command.descripcion(), command.imagen());
+    }
 
     public TortaDto toDto(Torta torta) {
         return new TortaDto(
