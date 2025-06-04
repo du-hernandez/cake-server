@@ -5,9 +5,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record TortaImagenRequest(
-        @NotBlank(message = "La URL de la imagen es obligatoria")
-        @Size(max = 500, message = "La URL no puede exceder 500 caracteres")
+        @NotBlank(message = "{imagen.url.notblank}")
+        @Size(max = 500, message = "{imagen.url.size}")
         @Pattern(regexp = "^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$",
-                message = "La URL no es válida")
+                message = "{torta.imagen.pattern}")
         String url
 ) {}

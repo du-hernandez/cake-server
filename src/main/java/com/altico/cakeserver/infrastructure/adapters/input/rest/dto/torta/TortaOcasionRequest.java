@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record TortaOcasionRequest(
-        @NotNull(message = "El ID de la ocasión es obligatorio")
-        @Positive(message = "El ID de la ocasión debe ser positivo")
+        @NotNull(message = "{ocasion.id.mandatory}")
+        @Positive(message = "{ocasion.id.positive}")
         Integer ocasionId
 ) {}

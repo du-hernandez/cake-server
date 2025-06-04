@@ -7,13 +7,13 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record CreateImagenRequest(
-        @NotBlank(message = "La URL es obligatoria")
-        @Size(max = 500, message = "La URL no puede exceder 500 caracteres")
+        @NotBlank(message = "{imagen.url.notblank}")
+        @Size(max = 500, message = "{imagen.url.size}")
         @Pattern(regexp = "^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$",
-                message = "La URL no es válida")
+                message = "{imagen.url.pattern}")
         String url,
 
-        @NotNull(message = "El ID de la torta es obligatorio")
-        @Positive(message = "El ID de la torta debe ser positivo")
+        @NotNull(message = "{imagen.tortaId.mandatory}")
+        @Positive(message = "{imagen.tortaId.positive}")
         Integer tortaId
 ) {}

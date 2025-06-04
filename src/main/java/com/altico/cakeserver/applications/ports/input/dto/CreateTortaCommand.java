@@ -1,15 +1,18 @@
 package com.altico.cakeserver.applications.ports.input.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Set;
 
 public record CreateTortaCommand(
-        @NotBlank(message = "La descripción es obligatoria")
-        @Size(max = 255, message = "La descripción no puede exceder 255 caracteres")
+        @NotBlank(message = "{torta.descripcion.notblank}")
+        @Size(min = 3, max = 255, message = "{torta.descripcion.size}")
         String descripcion,
 
-        @Size(max = 500, message = "La URL de imagen no puede exceder 500 caracteres")
+        @Size(max = 500, message = "{torta.imagen.size}")
+        @Pattern(regexp = "^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$",
+                message = "{imagen.url.pattern}")
         String imagen,
 
         Set<Integer> ocasionIds
