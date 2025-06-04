@@ -1,8 +1,13 @@
 package com.altico.cakeserver.infrastructure.adapters.input.rest;
 
 import com.altico.cakeserver.applications.mapper.DomainDtoMapper;
+import com.altico.cakeserver.applications.ports.input.ImagenServicePort;
+import com.altico.cakeserver.applications.ports.input.OcasionServicePort;
 import com.altico.cakeserver.applications.ports.input.TortaServicePort;
 import com.altico.cakeserver.applications.ports.input.dto.TortaDto;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.imagen.ImagenListResponse;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.ocasion.OcasionListResponse;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.ocasion.OcasionResponse;
 import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.torta.*;
 import com.altico.cakeserver.infrastructure.adapters.input.rest.mapper.RestDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +36,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Tag(name = "Tortas", description = "API para gestión de tortas")
 public class TortaRestController {
+    // Importado para dar soporte a HATEOAS
+    private final ImagenServicePort imagenService;
+    private final OcasionServicePort ocasionService;
 
     private final TortaServicePort tortaService;
     private final DomainDtoMapper domainMapper;
@@ -217,5 +225,33 @@ public class TortaRestController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/ocasiones")
+    @Operation(summary = "Listar ocasiones de una torta", description = "Lista todas las ocasiones asociadas a una torta")
+//    public ResponseEntity<OcasionListResponse> listarOcasionesPorTorta(@PathVariable Integer id) {
+    public ResponseEntity<List<OcasionResponse>> listarOcasionesPorTorta(@PathVariable Integer id) {
+        log.info("Listando ocasiones para torta ID: {}", id);
+
+        var torta = tortaService.obtenerPorId(id);
+        var response = torta.getOcasiones().stream()
+                .map(domainMapper::toDto)
+                .map(restMapper::toResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/imagenes")
+    @Operation(summary = "Listar imágenes de una torta", description = "Lista todas las imágenes de una torta")
+    public ResponseEntity<ImagenListResponse> listarImagenesPorTorta(@PathVariable Integer id) {
+        log.info("Listando imágenes para torta ID: {}", id);
+
+        var imagenes = imagenService.listarPorTorta(id);
+        var imagenesDto = imagenes.stream()
+                .map(domainMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok(restMapper.toListImagenResponse(imagenesDto));
     }
 }

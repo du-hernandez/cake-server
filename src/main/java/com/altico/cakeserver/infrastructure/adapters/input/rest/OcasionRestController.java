@@ -2,7 +2,9 @@ package com.altico.cakeserver.infrastructure.adapters.input.rest;
 
 import com.altico.cakeserver.applications.mapper.DomainDtoMapper;
 import com.altico.cakeserver.applications.ports.input.OcasionServicePort;
+import com.altico.cakeserver.applications.ports.input.TortaServicePort;
 import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.ocasion.*;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.torta.TortaSummaryResponse;
 import com.altico.cakeserver.infrastructure.adapters.input.rest.mapper.RestDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,6 +30,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Tag(name = "Ocasiones", description = "API para gestión de ocasiones")
 public class OcasionRestController {
+
+    // Importado para dar soporte a HATEOAS
+    private final TortaServicePort tortaService;
 
     private final OcasionServicePort ocasionService;
     private final DomainDtoMapper domainMapper;
@@ -230,6 +235,25 @@ public class OcasionRestController {
                 totalOcasiones - ocasionesActivas,
                 ocasionesSinTortas
         );
+
+        return ResponseEntity.ok(response);
+    }
+
+    //Soporte HATEOAS
+    @GetMapping("/{id}/tortas")
+    @Operation(summary = "Listar tortas de una ocasión", description = "Lista todas las tortas asociadas a una ocasión específica")
+    public ResponseEntity<List<TortaSummaryResponse>> listarTortasPorOcasion(@PathVariable Integer id) {
+        log.info("Listando tortas para ocasión ID: {}", id);
+
+        // Verificar que la ocasión existe
+        ocasionService.obtenerPorId(id);
+
+        // Usar el servicio de tortas para buscar por ocasión
+        var tortas = tortaService.buscarPorOcasion(id);
+        var response = tortas.stream()
+                .map(domainMapper::toDto)
+                .map(restMapper::toSummaryResponse)
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
