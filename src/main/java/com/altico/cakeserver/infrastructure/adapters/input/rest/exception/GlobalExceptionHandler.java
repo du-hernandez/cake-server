@@ -263,6 +263,60 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
+    // Excepciones de seguridad - 401 Unauthorized
+    @ExceptionHandler({
+            org.springframework.security.authentication.BadCredentialsException.class,
+            org.springframework.security.authentication.InsufficientAuthenticationException.class,
+            org.springframework.security.core.AuthenticationException.class
+    })
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            Exception ex, HttpServletRequest request) {
+        log.error("Error de autenticación: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Error de autenticación",
+                "Credenciales inválidas o token expirado",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    // Excepciones de autorización - 403 Forbidden
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException ex,
+            HttpServletRequest request) {
+        log.error("Acceso denegado: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Acceso denegado",
+                "No tienes permisos para acceder a este recurso",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    // Username ya existe - 409 Conflict
+    @ExceptionHandler(org.springframework.security.core.userdetails.UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(
+            org.springframework.security.core.userdetails.UsernameNotFoundException ex,
+            HttpServletRequest request) {
+        log.error("Usuario no encontrado: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Error de autenticación",
+                "Usuario o contraseña incorrectos",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
     // Excepción genérica - 500 Internal Server Error
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
