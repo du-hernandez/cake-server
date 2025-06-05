@@ -63,9 +63,9 @@ CREATE TRIGGER update_usuarios_fecha_actualizado
 
 -- Insertar usuarios de prueba (contraseña: password123)
 INSERT INTO usuarios (username, email, password, activo)
-VALUES ('admin', 'admin@tortas.com', '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', true),
-       ('user', 'user@tortas.com', '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', true),
-       ('viewer', 'viewer@tortas.com', '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', true);
+VALUES ('admin', 'admin@tortas.com', '$2a$10$FfV38tN46lB2NuKQXWzzB.zdcf64cAyEcJakw8J4cLbuq6uaxgO2a', true),
+       ('user', 'user@tortas.com', '$2a$10$FfV38tN46lB2NuKQXWzzB.zdcf64cAyEcJakw8J4cLbuq6uaxgO2a', true),
+       ('viewer', 'viewer@tortas.com', '$2a$10$FfV38tN46lB2NuKQXWzzB.zdcf64cAyEcJakw8J4cLbuq6uaxgO2a', true);
 
 -- Asignar roles
 INSERT INTO usuario_roles (usuario_id, rol)

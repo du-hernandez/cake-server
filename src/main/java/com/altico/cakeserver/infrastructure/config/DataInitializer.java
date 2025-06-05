@@ -2,6 +2,8 @@ package com.altico.cakeserver.infrastructure.config;
 
 import com.altico.cakeserver.applications.ports.input.*;
 import com.altico.cakeserver.domain.model.*;
+import com.altico.cakeserver.infrastructure.adapters.output.persistence.entity.UsuarioEntity;
+import com.altico.cakeserver.infrastructure.adapters.output.persistence.repository.UsuarioRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +18,8 @@ public class DataInitializer {
     @Profile("dev") // Solo en perfil de desarrollo
     CommandLineRunner init(TortaServicePort tortaService,
                            OcasionServicePort ocasionService,
-                           ImagenServicePort imagenService) {
+                           ImagenServicePort imagenService,
+                           UsuarioRepository usuarioRepository) {
 
         return args -> {
             log.info("Inicializando datos de prueba...");
@@ -95,6 +98,33 @@ public class DataInitializer {
             ocasionService.obtenerOcasionesMasPopulares(3).forEach(stat -> {
                 log.info("  * {}: {} tortas", stat.get("nombre"), stat.get("cantidadTortas"));
             });
+
+
+            // Crear usuario
+            UsuarioEntity usuarioAdmin = new UsuarioEntity(
+                    "admin",
+                    "admin@tortas.com",
+                    "$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6"
+            );
+            usuarioAdmin.getRoles().add("ROLE_ADMIN");
+            usuarioRepository.save(usuarioAdmin);
+
+            UsuarioEntity usuarioUser = new UsuarioEntity(
+                    "user",
+                    "user@tortas.com",
+                    "$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6"
+            );
+            // Asignar rol por defecto
+            usuarioUser.getRoles().add("ROLE_USER");
+            usuarioRepository.save(usuarioUser);
+
+            UsuarioEntity usuarioViewer = new UsuarioEntity(
+                    "viewer",
+                    "viewer@tortas.com",
+                    "$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6"
+            );
+            usuarioViewer.getRoles().add("ROLE_VIEWER");
+            usuarioRepository.save(usuarioViewer);
         };
     }
 }
