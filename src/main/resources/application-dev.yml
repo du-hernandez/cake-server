@@ -151,3 +151,11 @@ springdoc:
     enabled: true
     operationsSorter: method
     tagsSorter: alpha
+
+  # Configuración JWT
+#  app:
+#    jwt:
+#      secret: secreto
+#      expiration-ms: 86400000     # 24 horas
+#      refresh-expiration-ms: 604800000  # 7 días
+#      issuer: torta-inventory-api
