@@ -1,6 +1,7 @@
 package com.altico.cakeserver.infrastructure.adapters.output.persistence.repository;
 
 import com.altico.cakeserver.infrastructure.adapters.output.persistence.entity.RolEntity;
+import com.altico.cakeserver.infrastructure.adapters.output.persistence.entity.UsuarioEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -45,20 +46,19 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "WHERE r.permisos IS EMPTY OR SIZE(r.permisos) = 0")
     List<RolEntity> findWithoutPermisos();
 
-    // Roles sin usuarios
-    @Query("SELECT r FROM RolEntity r " +
-            "WHERE r.id NOT IN (" +
-            "  SELECT ur.rol FROM UsuarioRolEntity ur" +
-            ")")
+    // ✅ CORREGIDO: Roles sin usuarios - consulta nativa más eficiente
+    @Query(value = "SELECT r.* FROM roles r " +
+            "WHERE r.nombre NOT IN (" +
+            "  SELECT DISTINCT ur.rol FROM usuario_roles ur" +
+            ")", nativeQuery = true)
     List<RolEntity> findWithoutUsers();
 
-    // Usuarios por rol
+    // ✅ CORREGIDO: Usuarios por rol - consulta JPQL
     @Query("SELECT u FROM UsuarioEntity u " +
-            "JOIN u.roles ur " +
-            "WHERE ur = :rolNombre")
-    List<Object[]> findUsersByRolNombre(@Param("rolNombre") String rolNombre);
+            "WHERE :rolNombre MEMBER OF u.roles")
+    List<UsuarioEntity> findUsersByRolNombre(@Param("rolNombre") String rolNombre);
 
-    // Roles por usuario
+    // ✅ CORREGIDO: Roles por usuario - consulta directa
     @Query("SELECT r FROM RolEntity r " +
             "WHERE r.nombre IN (" +
             "  SELECT ur FROM UsuarioEntity u " +
@@ -73,7 +73,7 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "WHERE r.id = :rolId AND rp.id = :permisoId")
     boolean rolHasPermiso(@Param("rolId") Integer rolId, @Param("permisoId") Integer permisoId);
 
-    // Estadísticas de roles
+    // ✅ CORREGIDO: Estadísticas de roles
     @Query("SELECT " +
             "'total' as tipo, COUNT(r) as cantidad FROM RolEntity r " +
             "UNION ALL " +
@@ -104,12 +104,12 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "FROM RolEntity r WHERE r.prioridad = :prioridad AND r.id != :excludeId")
     boolean existsByPrioridadAndIdNot(@Param("prioridad") int prioridad, @Param("excludeId") Integer excludeId);
 
-    // Roles más utilizados
-    @Query("SELECT r.nombre, COUNT(ur) as cantidad " +
-            "FROM RolEntity r " +
-            "LEFT JOIN UsuarioEntity u ON :rolNombre MEMBER OF u.roles " +
-            "GROUP BY r.nombre " +
-            "ORDER BY cantidad DESC")
+    // ✅ CORREGIDO: Roles más utilizados - consulta nativa
+    @Query(value = "SELECT ur.rol as nombre, COUNT(ur.usuario_id) as cantidad " +
+            "FROM usuario_roles ur " +
+            "INNER JOIN roles r ON ur.rol = r.nombre " +
+            "GROUP BY ur.rol " +
+            "ORDER BY cantidad DESC", nativeQuery = true)
     List<Object[]> findMostUsedRoles();
 
     // Buscar por nombre exacto (case insensitive)

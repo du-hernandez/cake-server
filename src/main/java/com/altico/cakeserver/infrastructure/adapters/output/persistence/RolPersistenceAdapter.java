@@ -26,7 +26,7 @@ public class RolPersistenceAdapter implements RolPersistencePort {
     private final PermisoRepository permisoRepository;
     private final UsuarioRepository usuarioRepository;
     private final RolPersistenceMapper rolMapper;
-    private final UsuarioPersistenceMapper usuarioMapper; // Mapper específico para usuarios
+    private final UsuarioPersistenceMapper usuarioMapper;
 
     @Override
     public RolCompleto save(RolCompleto rol) {
@@ -143,7 +143,7 @@ public class RolPersistenceAdapter implements RolPersistencePort {
     @Override
     @Transactional(readOnly = true)
     public List<UsuarioCompleto> findUsersByRolId(Integer rolId) {
-        // CORREGIDO: Buscar el nombre del rol primero
+        // ✅ CORREGIDO: Buscar el nombre del rol primero y luego los usuarios
         Optional<RolEntity> rolEntity = rolRepository.findById(rolId);
         if (rolEntity.isEmpty()) {
             return List.of();
@@ -151,9 +151,9 @@ public class RolPersistenceAdapter implements RolPersistencePort {
 
         String rolNombre = rolEntity.get().getNombre();
 
-        // CORREGIDO: Usar el método correcto del repositorio
-        return usuarioRepository.findByRoles(rolNombre).stream()
-                .map(usuarioMapper::toDomain) // CORREGIDO: Usar mapper específico
+        // ✅ CORREGIDO: Usar el método correcto que retorna UsuarioEntity
+        return rolRepository.findUsersByRolNombre(rolNombre).stream()
+                .map(usuarioMapper::toDomain)
                 .collect(Collectors.toList());
     }
 
