@@ -1,7 +1,9 @@
 package com.altico.cakeserver.infrastructure.adapters.input.rest.exception;
 
 import com.altico.cakeserver.domain.exception.*;
-import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.error.*;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.error.ApiError;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.error.ErrorResponse;
+import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.error.ValidationError;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,7 +31,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             TortaNotFoundException.class,
             OcasionNotFoundException.class,
-            ImagenNotFoundException.class
+            ImagenNotFoundException.class,
+            UserNotFoundException.class,
+            RoleNotFoundException.class,
+            PermissionNotFoundException.class,
+            RefreshTokenNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(
             RuntimeException ex, HttpServletRequest request) {
@@ -48,7 +54,12 @@ public class GlobalExceptionHandler {
     // Excepciones de dominio - 409 Conflict
     @ExceptionHandler({
             DuplicateOcasionException.class,
-            BusinessRuleViolationException.class
+            BusinessRuleViolationException.class,
+            DuplicateUserException.class,
+            DuplicateRoleException.class,
+            DuplicatePermissionException.class,
+            RoleInUseException.class,
+            PermissionInUseException.class
     })
     public ResponseEntity<ErrorResponse> handleConflictException(
             RuntimeException ex, HttpServletRequest request) {
@@ -88,7 +99,14 @@ public class GlobalExceptionHandler {
     }
 
     // Validación de campos - 400 Bad Request
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            ValidationException.class,
+            PasswordValidationException.class,
+            EmailValidationException.class,
+            InvalidPermissionException.class,
+            InvalidRoleHierarchyException.class
+    })
     public ResponseEntity<ErrorResponse> handleValidationExceptions(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
         log.error("Error de validación en: {}", request.getRequestURI());
@@ -267,7 +285,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             org.springframework.security.authentication.BadCredentialsException.class,
             org.springframework.security.authentication.InsufficientAuthenticationException.class,
-            org.springframework.security.core.AuthenticationException.class
+            org.springframework.security.core.AuthenticationException.class,
+            InvalidCredentialsException.class,
+            ExpiredRefreshTokenException.class,
+            RevokedRefreshTokenException.class
     })
     public ResponseEntity<ErrorResponse> handleAuthenticationException(
             Exception ex, HttpServletRequest request) {
@@ -284,9 +305,9 @@ public class GlobalExceptionHandler {
     }
 
     // Excepciones de autorización - 403 Forbidden
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(
-            org.springframework.security.access.AccessDeniedException ex,
+            AccessDeniedException ex,
             HttpServletRequest request) {
         log.error("Acceso denegado: {}", ex.getMessage());
 
@@ -327,6 +348,207 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 ApiError.INTERNAL_SERVER_ERROR.getDefaultMessage(),
                 "Ha ocurrido un error inesperado. Por favor, contacte al administrador.",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    // ============== EXCEPCIONES DE AUTORIZACIÓN ==============
+
+    @ExceptionHandler({
+            InsufficientPermissionsException.class,
+            InsufficientRoleException.class
+    })
+    public ResponseEntity<ErrorResponse> handleInsufficientPermissionsException(
+            RuntimeException ex, HttpServletRequest request) {
+        log.error("Permisos insuficientes: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Permisos insuficientes",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    @ExceptionHandler(UserBlockedException.class)
+    public ResponseEntity<ErrorResponse> handleUserBlockedException(
+            UserBlockedException ex, HttpServletRequest request) {
+        log.error("Usuario bloqueado: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.LOCKED.value(),
+                "Usuario bloqueado",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.LOCKED).body(errorResponse);
+    }
+
+    // ============== EXCEPCIONES DE LÍMITES Y CUOTAS ==============
+
+    @ExceptionHandler({
+            TooManyTokensException.class,
+            RateLimitExceededException.class,
+            QuotaExceededException.class
+    })
+    public ResponseEntity<ErrorResponse> handleLimitExceededException(
+            RuntimeException ex, HttpServletRequest request) {
+        log.error("Límite excedido: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                "Límite excedido",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(errorResponse);
+    }
+
+    // ============== EXCEPCIONES DE SEGURIDAD ==============
+
+    @ExceptionHandler({
+            SuspiciousActivityException.class,
+            SecurityViolationException.class
+    })
+    public ResponseEntity<ErrorResponse> handleSecurityException(
+            RuntimeException ex, HttpServletRequest request) {
+        log.error("Violación de seguridad: {}", ex.getMessage());
+
+        // No revelar detalles de seguridad al cliente
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Acceso denegado",
+                "Actividad sospechosa detectada",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    // ============== EXCEPCIONES DE SESIÓN ==============
+
+    @ExceptionHandler({
+            SessionExpiredException.class,
+            InvalidSessionException.class
+    })
+    public ResponseEntity<ErrorResponse> handleSessionException(
+            RuntimeException ex, HttpServletRequest request) {
+        log.error("Error de sesión: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Sesión inválida",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(ConcurrentSessionException.class)
+    public ResponseEntity<ErrorResponse> handleConcurrentSessionException(
+            ConcurrentSessionException ex, HttpServletRequest request) {
+        log.error("Sesión concurrente: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Sesión concurrente",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    // ============== EXCEPCIONES DE SISTEMA ==============
+
+    @ExceptionHandler({
+            ConfigurationException.class,
+            SystemInitializationException.class
+    })
+    public ResponseEntity<ErrorResponse> handleSystemException(
+            RuntimeException ex, HttpServletRequest request) {
+        log.error("Error de sistema: {}", ex.getMessage(), ex);
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Error de sistema",
+                "Error interno del sistema. Contacte al administrador.",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler({
+            SynchronizationException.class,
+            DataConsistencyException.class
+    })
+    public ResponseEntity<ErrorResponse> handleDataException(
+            RuntimeException ex, HttpServletRequest request) {
+        log.error("Error de consistencia de datos: {}", ex.getMessage(), ex);
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Error de consistencia",
+                "Error en la consistencia de datos. Intente nuevamente.",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    // ============== EXCEPCIONES DE RECURSOS ==============
+
+    @ExceptionHandler(ResourceLockedException.class)
+    public ResponseEntity<ErrorResponse> handleResourceLockedException(
+            ResourceLockedException ex, HttpServletRequest request) {
+        log.error("Recurso bloqueado: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.LOCKED.value(),
+                "Recurso bloqueado",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.LOCKED).body(errorResponse);
+    }
+
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ErrorResponse> handleResourceConflictException(
+            ResourceConflictException ex, HttpServletRequest request) {
+        log.error("Conflicto de recurso: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "Conflicto de recurso",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    // ============== AUDITORÍA ==============
+
+    @ExceptionHandler(AuditLogException.class)
+    public ResponseEntity<ErrorResponse> handleAuditLogException(
+            AuditLogException ex, HttpServletRequest request) {
+        log.error("Error en auditoría: {}", ex.getMessage(), ex);
+
+        // Los errores de auditoría no deben interrumpir la operación principal
+        // pero se debe notificar al administrador
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Error de auditoría",
+                "Error en el registro de auditoría",
                 request.getRequestURI()
         );
 

@@ -132,7 +132,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,mappings
+        include: health,info,metrics,prometheus,mappings,auditevents
       base-path: /actuator
   endpoint:
     health:
@@ -143,6 +143,32 @@ app:
   environment: "DEVELOPMENT"
   debug: true
 
+  # Configuración de administración
+  admin:
+    # Límites de seguridad
+    max-login-attempts: 5
+    lockout-duration-minutes: 30
+    session-timeout-minutes: 30
+    max-concurrent-sessions: 3
+
+    # Configuración de tokens
+    max-refresh-tokens-per-user: 5
+    token-cleanup-interval-hours: 24
+    suspicious-activity-threshold: 10
+
+    # Configuración de auditoría
+    audit-retention-days: 90
+    audit-cleanup-enabled: true
+    audit-sensitive-operations: true
+
+    # Configuración de roles
+    default-user-role: ROLE_USER
+    role-hierarchy-enabled: true
+
+    # Configuración de permisos
+    permission-sync-enabled: true
+    permission-auto-discovery: true
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -151,6 +177,9 @@ springdoc:
     enabled: true
     operationsSorter: method
     tagsSorter: alpha
+    display-request-duration: true
+    groups-order: desc
+  show-actuator: true
 
   # Configuración JWT
 #  app:

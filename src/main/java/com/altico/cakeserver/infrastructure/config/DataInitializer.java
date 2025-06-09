@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @Slf4j
@@ -19,7 +20,11 @@ public class DataInitializer {
     CommandLineRunner init(TortaServicePort tortaService,
                            OcasionServicePort ocasionService,
                            ImagenServicePort imagenService,
-                           UsuarioRepository usuarioRepository) {
+                           PermisoServicePort permisoService,
+                           RolServicePort rolService,
+                           UsuarioServicePort usuarioService,
+                           UsuarioRepository usuarioRepository,
+                           PasswordEncoder passwordEncoder) {
 
         return args -> {
             log.info("Inicializando datos de prueba...");
