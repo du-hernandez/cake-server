@@ -153,12 +153,56 @@ public class UsuarioPersistenceAdapter implements UsuarioPersistencePort {
     public UsuarioEstadisticas getUsuarioEstadisticas() {
         Object[] stats = usuarioRepository.getUsuarioEstadisticas();
 
-        // Extraer valores del array
-        long total = ((Number) stats[0]).longValue();
-        long activos = ((Number) stats[1]).longValue();
-        long inactivos = ((Number) stats[2]).longValue();
-        long sinRoles = ((Number) stats[3]).longValue();
-        long conMultiplesRoles = ((Number) stats[4]).longValue();
+        log.info("ESTADISTICAS DE USUARIO: {}", stats);
+
+//        // Extraer valores del array
+//        long total = ((Number) stats[0]).longValue();
+//        long activos = ((Number) stats[1]).longValue();
+//        long inactivos = ((Number) stats[2]).longValue();
+//        long sinRoles = ((Number) stats[3]).longValue();
+//        long conMultiplesRoles = ((Number) stats[4]).longValue();
+
+        long total = 0;
+        long activos = 0;
+        long inactivos = 0;
+        long sinRoles = 0;
+        long conMultiplesRoles = 0;
+
+        // Validar y extraer el valor de 'total'
+        if (stats.length > 0 && stats[0] instanceof Number) {
+            total = ((Number) stats[0]).longValue();
+        } else if (stats.length > 0 && stats[0] == null) {
+            // Si es null, lo tratamos como 0 o manejamos la lógica específica
+            total = 0; // O lanzas una excepción personalizada, o registras un warning
+        }
+
+        // Validar y extraer el valor de 'activos'
+        if (stats.length > 1 && stats[1] instanceof Number) {
+            activos = ((Number) stats[1]).longValue();
+        } else if (stats.length > 1 && stats[1] == null) {
+            activos = 0;
+        }
+
+        // Validar y extraer el valor de 'inactivos'
+        if (stats.length > 2 && stats[2] instanceof Number) {
+            inactivos = ((Number) stats[2]).longValue();
+        } else if (stats.length > 2 && stats[2] == null) {
+            inactivos = 0;
+        }
+
+        // Validar y extraer el valor de 'sinRoles'
+        if (stats.length > 3 && stats[3] instanceof Number) {
+            sinRoles = ((Number) stats[3]).longValue();
+        } else if (stats.length > 3 && stats[3] == null) {
+            sinRoles = 0;
+        }
+
+        // Validar y extraer el valor de 'conMultiplesRoles'
+        if (stats.length > 4 && stats[4] instanceof Number) {
+            conMultiplesRoles = ((Number) stats[4]).longValue();
+        } else if (stats.length > 4 && stats[4] == null) {
+            conMultiplesRoles = 0;
+        }
 
         // Calcular estadísticas de tiempo
         LocalDateTime ahora = LocalDateTime.now();

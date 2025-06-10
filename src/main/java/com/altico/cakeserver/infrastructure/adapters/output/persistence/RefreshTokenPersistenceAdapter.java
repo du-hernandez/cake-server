@@ -228,15 +228,79 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
         LocalDateTime ahora24h = LocalDateTime.now().plusHours(24);
         Object[] stats = refreshTokenRepository.getTokenEstadisticas(ahora24h);
 
+//        return new TokenEstadisticas(
+//                ((Number) stats[0]).longValue(), // totalTokens
+//                ((Number) stats[1]).longValue(), // tokensActivos
+//                ((Number) stats[2]).longValue(), // tokensExpirados
+//                ((Number) stats[3]).longValue(), // tokensRevocados
+//                ((Number) stats[4]).longValue(), // tokensPorExpirar24h
+//                ((Number) stats[5]).longValue(), // sesionesUnicas
+//                ((Number) stats[6]).longValue(), // dispositivosUnicos
+//                ((Number) stats[7]).doubleValue() // promedioSesionesPorUsuario
+//        );
+
+        // Inicializamos todas las variables con un valor predeterminado (por ejemplo, 0 para long y 0.0 para double)
+        // Esto es útil si un valor es null o no es del tipo esperado.
+        long totalTokens = 0;
+        long tokensActivos = 0;
+        long tokensExpirados = 0;
+        long tokensRevocados = 0;
+        long tokensPorExpirar24h = 0;
+        long sesionesUnicas = 0;
+        long dispositivosUnicos = 0;
+        double promedioSesionesPorUsuario = 0.0; // Para el valor double
+
+        // 1. totalTokens
+        if (stats.length > 0 && stats[0] instanceof Number) {
+            totalTokens = ((Number) stats[0]).longValue();
+        }
+        // Si stats[0] es null o no es Number, totalTokens se mantendrá en 0
+
+        // 2. tokensActivos
+        if (stats.length > 1 && stats[1] instanceof Number) {
+            tokensActivos = ((Number) stats[1]).longValue();
+        }
+
+        // 3. tokensExpirados
+        if (stats.length > 2 && stats[2] instanceof Number) {
+            tokensExpirados = ((Number) stats[2]).longValue();
+        }
+
+        // 4. tokensRevocados
+        if (stats.length > 3 && stats[3] instanceof Number) {
+            tokensRevocados = ((Number) stats[3]).longValue();
+        }
+
+        // 5. tokensPorExpirar24h
+        if (stats.length > 4 && stats[4] instanceof Number) {
+            tokensPorExpirar24h = ((Number) stats[4]).longValue();
+        }
+
+        // 6. sesionesUnicas
+        if (stats.length > 5 && stats[5] instanceof Number) {
+            sesionesUnicas = ((Number) stats[5]).longValue();
+        }
+
+        // 7. dispositivosUnicos
+        if (stats.length > 6 && stats[6] instanceof Number) {
+            dispositivosUnicos = ((Number) stats[6]).longValue();
+        }
+
+        // 8. promedioSesionesPorUsuario (¡Este es un double!)
+        if (stats.length > 7 && stats[7] instanceof Number) {
+            promedioSesionesPorUsuario = ((Number) stats[7]).doubleValue(); // Usar doubleValue()
+        }
+
+        // Ahora, crea la instancia de TokenEstadisticas con los valores validados
         return new TokenEstadisticas(
-                ((Number) stats[0]).longValue(), // totalTokens
-                ((Number) stats[1]).longValue(), // tokensActivos
-                ((Number) stats[2]).longValue(), // tokensExpirados
-                ((Number) stats[3]).longValue(), // tokensRevocados
-                ((Number) stats[4]).longValue(), // tokensPorExpirar24h
-                ((Number) stats[5]).longValue(), // sesionesUnicas
-                ((Number) stats[6]).longValue(), // dispositivosUnicos
-                ((Number) stats[7]).doubleValue() // promedioSesionesPorUsuario
+                totalTokens,
+                tokensActivos,
+                tokensExpirados,
+                tokensRevocados,
+                tokensPorExpirar24h,
+                sesionesUnicas,
+                dispositivosUnicos,
+                promedioSesionesPorUsuario
         );
     }
 
