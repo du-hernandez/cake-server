@@ -4,7 +4,9 @@ import com.altico.cakeserver.applications.ports.input.RefreshTokenServicePort;
 import com.altico.cakeserver.domain.model.RefreshToken;
 import com.altico.cakeserver.infrastructure.adapters.input.rest.dto.auth.*;
 import com.altico.cakeserver.infrastructure.adapters.output.persistence.entity.UsuarioEntity;
+import com.altico.cakeserver.infrastructure.adapters.output.persistence.entity.RolEntity;
 import com.altico.cakeserver.infrastructure.adapters.output.persistence.repository.UsuarioRepository;
+import com.altico.cakeserver.infrastructure.adapters.output.persistence.repository.RolRepository;
 import com.altico.cakeserver.infrastructure.config.JwtProperties;
 import com.altico.cakeserver.infrastructure.security.jwt.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +38,11 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository; // ✅ AGREGAR: Para buscar roles por nombre
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
-    private final RefreshTokenServicePort refreshTokenService; // ✅ NUEVA DEPENDENCIA
+    private final RefreshTokenServicePort refreshTokenService;
 
     @PostMapping("/login")
     @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y devuelve tokens JWT")
@@ -49,7 +52,7 @@ public class AuthController {
     })
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request,
-            HttpServletRequest httpRequest) { // ✅ NUEVO PARÁMETRO
+            HttpServletRequest httpRequest) {
 
         log.info("Intento de login para usuario: {}", request.username());
 
@@ -70,7 +73,7 @@ public class AuthController {
             // Generar access token
             String accessToken = jwtService.generateToken(userDetails);
 
-            // ✅ CREAR REFRESH TOKEN usando el servicio
+            // Crear refresh token
             String deviceInfo = extractDeviceInfo(httpRequest);
             String ipAddress = getClientIpAddress(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
@@ -103,7 +106,7 @@ public class AuthController {
     })
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request,
-            HttpServletRequest httpRequest) { // ✅ NUEVO PARÁMETRO
+            HttpServletRequest httpRequest) {
 
         log.info("Registro de nuevo usuario: {}", request.username());
 
@@ -124,8 +127,10 @@ public class AuthController {
                     passwordEncoder.encode(request.password())
             );
 
-            // Asignar rol por defecto
-            usuario.getRoles().add("ROLE_USER");
+            // ✅ CORRECCIÓN 1: Buscar y asignar rol por defecto usando RolEntity
+            RolEntity rolUser = rolRepository.findByNombre("ROLE_USER")
+                    .orElseThrow(() -> new RuntimeException("Rol ROLE_USER no encontrado"));
+            usuario.getRoles().add(rolUser);
 
             // Guardar
             usuario = usuarioRepository.save(usuario);
@@ -143,7 +148,7 @@ public class AuthController {
             // Generar access token
             String accessToken = jwtService.generateToken(userDetails);
 
-            // ✅ CREAR REFRESH TOKEN usando el servicio
+            // Crear refresh token
             String deviceInfo = extractDeviceInfo(httpRequest);
             String ipAddress = getClientIpAddress(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
@@ -175,12 +180,12 @@ public class AuthController {
     })
     public ResponseEntity<AuthResponse> refresh(
             @Valid @RequestBody RefreshTokenRequest request,
-            HttpServletRequest httpRequest) { // ✅ NUEVO PARÁMETRO
+            HttpServletRequest httpRequest) {
 
         log.info("Solicitud de renovación de token");
 
         try {
-            // ✅ VALIDAR Y RENOVAR TOKEN usando el servicio
+            // Validar y renovar token
             if (!refreshTokenService.esTokenValido(request.refreshToken())) {
                 log.warn("Token de refresco inválido: {}", request.refreshToken());
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -189,13 +194,13 @@ public class AuthController {
             // Obtener token actual
             var tokenActual = refreshTokenService.obtenerTokenPorId(request.refreshToken());
 
-            // Cargar usuario
+            // ✅ CORRECCIÓN 2: Cargar usuario y mapear roles correctamente
             UserDetails userDetails = usuarioRepository.findByUsername(tokenActual.username())
                     .map(usuario -> org.springframework.security.core.userdetails.User.builder()
                             .username(usuario.getUsername())
                             .password(usuario.getPassword())
                             .authorities(usuario.getRoles().stream()
-                                    .map(SimpleGrantedAuthority::new)
+                                    .map(rol -> new SimpleGrantedAuthority(rol.getNombre())) // ✅ CORREGIDO
                                     .collect(Collectors.toList()))
                             .build())
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -203,7 +208,7 @@ public class AuthController {
             // Generar nuevo access token
             String newAccessToken = jwtService.generateToken(userDetails);
 
-            // ✅ RENOVAR refresh token
+            // Renovar refresh token
             var nuevoRefreshToken = refreshTokenService.renovarToken(request.refreshToken());
 
             // Obtener información del usuario
@@ -221,19 +226,22 @@ public class AuthController {
         }
     }
 
-    private AuthResponse getAuthResponse(UsuarioEntity usuario, String newAccessToken, RefreshToken nuevoRefreshToken) {
+    // ✅ CORRECCIÓN 3: Método helper para crear AuthResponse
+    private AuthResponse getAuthResponse(UsuarioEntity usuario, String accessToken, RefreshToken refreshToken) {
         UserInfo userInfo = new UserInfo(
                 usuario.getId(),
                 usuario.getUsername(),
                 usuario.getEmail(),
-                usuario.getRoles(),
+                // ✅ CORREGIDO: Convertir Set<RolEntity> a Set<String>
+                usuario.getRoles().stream()
+                        .map(RolEntity::getNombre)
+                        .collect(Collectors.toSet()),
                 usuario.isActivo()
         );
 
-        // ✅ NUEVO REFRESH TOKEN ID
         return new AuthResponse(
-                newAccessToken,
-                nuevoRefreshToken.id(), // ✅ NUEVO REFRESH TOKEN ID
+                accessToken,
+                refreshToken.id(),
                 jwtProperties.getExpirationMs() / 1000,
                 userInfo
         );
@@ -253,7 +261,7 @@ public class AuthController {
                 authentication != null ? authentication.getName() : "desconocido");
 
         try {
-            // ✅ REVOCAR REFRESH TOKEN usando el servicio
+            // Revocar refresh token
             if (authentication != null) {
                 refreshTokenService.revocarTokenPorUsuario(request.refreshToken(), authentication.getName());
             } else {
@@ -293,11 +301,14 @@ public class AuthController {
         UsuarioEntity usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        // ✅ CORREGIDO: Convertir roles correctamente
         UserInfo userInfo = new UserInfo(
                 usuario.getId(),
                 usuario.getUsername(),
                 usuario.getEmail(),
-                usuario.getRoles(),
+                usuario.getRoles().stream()
+                        .map(RolEntity::getNombre)
+                        .collect(Collectors.toSet()),
                 usuario.isActivo()
         );
 

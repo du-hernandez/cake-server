@@ -56,6 +56,10 @@ public class RolEntity {
     )
     private Set<PermisoEntity> permisos = new HashSet<>();
 
+    // Relación bidireccional (opcional)
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    private Set<UsuarioEntity> usuarios = new HashSet<>();
+
     public RolEntity(String nombre, String descripcion, int prioridad) {
         this.nombre = nombre;
         this.descripcion = descripcion;

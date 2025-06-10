@@ -10,18 +10,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "usuarios",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "username"),
-                @UniqueConstraint(columnNames = "email")
-        },
-        indexes = {
-                @Index(name = "idx_usuario_username", columnList = "username"),
-                @Index(name = "idx_usuario_email", columnList = "email")
-        }
-)
+@Table(name = "usuarios")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,11 +35,14 @@ public class UsuarioEntity {
     @Column(nullable = false)
     private boolean activo = true;
 
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))
-    @Column(name = "rol")
-    @Enumerated(EnumType.STRING)
-    private Set<String> roles = new HashSet<>();
+    // Relación ManyToMany con RolEntity
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "usuario_roles",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "rol_id")
+    )
+    private Set<RolEntity> roles = new HashSet<>();
 
     @Column(name = "fecha_creado", nullable = false, updatable = false)
     @CreationTimestamp
@@ -62,5 +57,25 @@ public class UsuarioEntity {
         this.email = email;
         this.password = password;
         this.activo = true;
+    }
+
+    // Métodos de conveniencia
+    public void agregarRol(RolEntity rol) {
+        this.roles.add(rol);
+    }
+
+    public void removerRol(RolEntity rol) {
+        this.roles.remove(rol);
+    }
+
+    public boolean tieneRol(String nombreRol) {
+        return roles.stream()
+                .anyMatch(rol -> rol.getNombre().equals(nombreRol));
+    }
+
+    public Set<String> getNombresRoles() {
+        return roles.stream()
+                .map(RolEntity::getNombre)
+                .collect(Collectors.toSet());
     }
 }

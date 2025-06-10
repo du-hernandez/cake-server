@@ -17,6 +17,12 @@ public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
 
     Optional<UsuarioEntity> findByUsername(String username);
 
+    // ✅ NUEVO: Método para cargar usuario con roles
+    @Query("SELECT DISTINCT u FROM UsuarioEntity u " +
+            "LEFT JOIN FETCH u.roles r " +
+            "WHERE u.username = :username")
+    Optional<UsuarioEntity> findByUsernameWithRoles(@Param("username") String username);
+
     Optional<UsuarioEntity> findByEmail(String email);
 
     boolean existsByUsername(String username);
@@ -24,6 +30,23 @@ public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
     boolean existsByEmail(String email);
 
     // ============== NUEVAS CONSULTAS PARA ADMINISTRACIÓN ==============
+
+    // ✅ ACTUALIZAR: Consultas que ahora usan relaciones FK
+    @Query("SELECT u FROM UsuarioEntity u " +
+            "JOIN u.roles r " +
+            "WHERE r.nombre = :rolNombre")
+    List<UsuarioEntity> findByRolNombre(@Param("rolNombre") String rolNombre);
+
+    @Query("SELECT COUNT(u) FROM UsuarioEntity u " +
+            "JOIN u.roles r " +
+            "WHERE r.nombre = :rolNombre")
+    long countByRolNombre(@Param("rolNombre") String rolNombre);
+
+    @Query("SELECT COUNT(u) FROM UsuarioEntity u " +
+            "JOIN u.roles r " +
+            "WHERE r.nombre = :rolNombre AND u.activo = :activo")
+    long countByRolNombreAndActive(@Param("rolNombre") String rolNombre,
+                                   @Param("activo") boolean activo);
 
     // Búsqueda con filtros avanzados
     @Query("SELECT u FROM UsuarioEntity u " +
@@ -43,8 +66,8 @@ public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
     @Query("SELECT u FROM UsuarioEntity u WHERE :rol MEMBER OF u.roles")
     List<UsuarioEntity> findByRoles(@Param("rol") String rol);
 
-    // Usuarios sin roles
-    @Query("SELECT u FROM UsuarioEntity u WHERE u.roles IS EMPTY OR SIZE(u.roles) = 0")
+    // ✅ NUEVO: Usuarios sin roles
+    @Query("SELECT u FROM UsuarioEntity u WHERE u.roles IS EMPTY")
     List<UsuarioEntity> findWithoutRoles();
 
     // Usuarios inactivos después de cierta fecha
@@ -64,7 +87,7 @@ public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
             "WHERE :rol MEMBER OF u.roles AND u.activo = :activo")
     long countByRoleAndActive(@Param("rol") String rol, @Param("activo") boolean activo);
 
-    // Estadísticas de usuarios
+    // ✅ ACTUALIZAR: Estadísticas mejoradas
     @Query("SELECT " +
             "COUNT(u) as total, " +
             "SUM(CASE WHEN u.activo = true THEN 1 ELSE 0 END) as activos, " +
