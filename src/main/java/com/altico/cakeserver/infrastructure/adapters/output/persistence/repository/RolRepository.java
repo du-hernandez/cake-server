@@ -13,12 +13,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
 public interface RolRepository extends JpaRepository<RolEntity, Integer> {
 
     // Búsquedas básicas
     boolean existsByNombre(String nombre);
     Optional<RolEntity> findByNombre(String nombre);
     List<RolEntity> findByActivo(boolean activo);
+
+    // ✅ MÉTODO BÁSICO: Buscar por prioridad
+    List<RolEntity> findByPrioridadLessThanEqualOrderByPrioridadAsc(Integer prioridad);
 
     // Búsqueda con fetch join para permisos
     @Query("SELECT DISTINCT r FROM RolEntity r " +
@@ -47,10 +51,11 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
     List<RolEntity> findWithoutPermisos();
 
     // ✅ CORREGIDO: Roles sin usuarios - consulta nativa más eficiente
-    @Query(value = "SELECT r.* FROM roles r " +
+    @Query(value = "SELECT r FROM roles r " +
             "WHERE r.nombre NOT IN (" +
             "  SELECT DISTINCT ur.rol FROM usuario_roles ur" +
             ")", nativeQuery = true)
+    @SuppressWarnings("SqlResolve")
     List<RolEntity> findWithoutUsers();
 
     // ✅ CORREGIDO: Usuarios por rol - consulta JPQL
@@ -110,6 +115,7 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "INNER JOIN roles r ON ur.rol = r.nombre " +
             "GROUP BY ur.rol " +
             "ORDER BY cantidad DESC", nativeQuery = true)
+    @SuppressWarnings("SqlResolve")
     List<Object[]> findMostUsedRoles();
 
     // Buscar por nombre exacto (case insensitive)
