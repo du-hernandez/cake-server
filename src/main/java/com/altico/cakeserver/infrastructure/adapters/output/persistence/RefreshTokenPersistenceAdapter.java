@@ -5,7 +5,7 @@ import com.altico.cakeserver.domain.model.DispositivoSospechoso;
 import com.altico.cakeserver.domain.model.RefreshToken;
 import com.altico.cakeserver.domain.model.TokenEstadisticas;
 import com.altico.cakeserver.infrastructure.adapters.output.persistence.entity.RefreshTokenEntity;
-import com.altico.cakeserver.infrastructure.adapters.output.persistence.mapper.AdminPersistenceMapper;
+import com.altico.cakeserver.infrastructure.adapters.output.persistence.mapper.RefreshTokenPersistenceMapper;
 import com.altico.cakeserver.infrastructure.adapters.output.persistence.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +20,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Adaptador de persistencia para RefreshToken siguiendo arquitectura hexagonal
+ * Implementa el puerto de salida definido en la capa de aplicación
+ */
 @Component
 @Transactional
 @RequiredArgsConstructor
@@ -27,24 +31,35 @@ import java.util.stream.Collectors;
 public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePort {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final AdminPersistenceMapper mapper;
+    private final RefreshTokenPersistenceMapper mapper;
 
     @Override
     public RefreshToken save(RefreshToken token) {
         log.debug("Guardando refresh token: {}", token.id());
-        RefreshTokenEntity entity = mapper.toEntity(token);
-        RefreshTokenEntity saved = refreshTokenRepository.save(entity);
-        return mapper.toDomain(saved);
+
+        try {
+            RefreshTokenEntity entity = mapper.toEntity(token);
+            RefreshTokenEntity saved = refreshTokenRepository.save(entity);
+            RefreshToken result = mapper.toDomain(saved);
+
+            log.debug("Token guardado exitosamente: {}", result.id());
+            return result;
+        } catch (Exception e) {
+            log.error("Error guardando refresh token {}: {}", token.id(), e.getMessage());
+            throw e;
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<RefreshToken> findById(String id) {
+        log.debug("Buscando refresh token por ID: {}", id);
         return refreshTokenRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public void deleteById(String id) {
+        log.debug("Eliminando refresh token: {}", id);
         refreshTokenRepository.deleteById(id);
     }
 
@@ -54,9 +69,12 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
         return refreshTokenRepository.existsById(id);
     }
 
+    // ============== BÚSQUEDAS POR USUARIO ==============
+
     @Override
     @Transactional(readOnly = true)
     public List<RefreshToken> findByUsername(String username) {
+        log.debug("Buscando tokens por username: {}", username);
         return refreshTokenRepository.findByUsername(username).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -76,6 +94,8 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
         return refreshTokenRepository.countByUsernameAndActivo(username, true);
     }
 
+    // ============== BÚSQUEDAS POR DISPOSITIVO ==============
+
     @Override
     @Transactional(readOnly = true)
     public List<RefreshToken> findByDeviceInfo(String deviceInfo) {
@@ -90,9 +110,12 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
         return refreshTokenRepository.existsByUsernameAndDeviceInfo(username, deviceInfo);
     }
 
+    // ============== BÚSQUEDAS CON FILTROS ==============
+
     @Override
     @Transactional(readOnly = true)
     public Page<RefreshToken> findAllWithFilters(Pageable pageable, String username, Boolean activo) {
+        log.debug("Buscando tokens con filtros - username: {}, activo: {}", username, activo);
         return refreshTokenRepository.findAllWithFilters(username, activo, pageable)
                 .map(mapper::toDomain);
     }
@@ -104,6 +127,8 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
+
+    // ============== OPERACIONES DE EXPIRACIÓN ==============
 
     @Override
     @Transactional(readOnly = true)
@@ -123,32 +148,47 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
 
     @Override
     public int deleteExpired() {
-        return refreshTokenRepository.deleteExpired();
+        log.info("Eliminando tokens expirados");
+        int deleted = refreshTokenRepository.deleteExpired();
+        log.info("Eliminados {} tokens expirados", deleted);
+        return deleted;
     }
 
     @Override
     public int deleteExpiredBefore(LocalDateTime fecha) {
+        log.info("Eliminando tokens expirados antes de: {}", fecha);
         return refreshTokenRepository.deleteByFechaExpiracionBefore(fecha);
     }
 
+    // ============== OPERACIONES DE REVOCACIÓN ==============
+
     @Override
     public int revokeAllByUsername(String username) {
-        return refreshTokenRepository.revokeAllByUsername(username);
+        log.info("Revocando todos los tokens del usuario: {}", username);
+        int revoked = refreshTokenRepository.revokeAllByUsername(username);
+        log.info("Revocados {} tokens para usuario: {}", revoked, username);
+        return revoked;
     }
 
     @Override
     public int revokeAllByDeviceInfo(String deviceInfo) {
+        log.info("Revocando todos los tokens del dispositivo: {}", deviceInfo);
         return refreshTokenRepository.revokeAllByDeviceInfo(deviceInfo);
     }
 
     @Override
     public void revokeById(String id) {
+        log.info("Revocando token: {}", id);
         refreshTokenRepository.revokeById(id);
     }
+
+    // ============== SEGURIDAD Y DETECCIÓN DE ANOMALÍAS ==============
 
     @Override
     @Transactional(readOnly = true)
     public List<DispositivoSospechoso> findSuspiciousDevices() {
+        log.debug("Buscando dispositivos sospechosos");
+
         List<Object[]> results = refreshTokenRepository.findSuspiciousDevices();
         return results.stream()
                 .map(row -> new DispositivoSospechoso(
@@ -178,14 +218,15 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
         return refreshTokenRepository.findDistinctDeviceInfoByUsername(username);
     }
 
+    // ============== ESTADÍSTICAS ==============
+
     @Override
     @Transactional(readOnly = true)
     public TokenEstadisticas getTokenEstadisticas() {
-        // Calcula la fecha y hora de ahora más 24 horas
-        LocalDateTime ahoraMas24Horas = LocalDateTime.now().plusDays(1);
+        log.debug("Obteniendo estadísticas de tokens");
 
-        // Llama al método del repositorio pasando el parámetro calculado
-        Object[] stats = refreshTokenRepository.getTokenEstadisticas(ahoraMas24Horas);
+        LocalDateTime ahora24h = LocalDateTime.now().plusHours(24);
+        Object[] stats = refreshTokenRepository.getTokenEstadisticas(ahora24h);
 
         return new TokenEstadisticas(
                 ((Number) stats[0]).longValue(), // totalTokens
@@ -216,8 +257,11 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenPersistencePo
         return refreshTokenRepository.countByFechaCreacionBetween(inicio, fin);
     }
 
+    // ============== MANTENIMIENTO ==============
+
     @Override
     public void updateUltimoUso(String tokenId, LocalDateTime ultimoUso) {
+        log.debug("Actualizando último uso para token: {}", tokenId);
         refreshTokenRepository.updateUltimoUso(tokenId, ultimoUso);
     }
 

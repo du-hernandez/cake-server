@@ -7,7 +7,7 @@ server:
   error:
     include-message: always
     include-binding-errors: always
-    include-stacktrace: on_param
+    include-stacktrace: ${ERROR_INCLUDE_STACKTRACE:on_param}
     include-exception: true
     whitelabel:
       enabled: false
@@ -137,6 +137,9 @@ management:
   endpoint:
     health:
       show-details: always
+  info:
+    env:
+      enabled: true
 
 # Mensaje personalizado
 app:
@@ -169,6 +172,38 @@ app:
     permission-sync-enabled: true
     permission-auto-discovery: true
 
+  # ============== CONFIGURACIÓN REFRESH TOKEN ==============
+  refresh-token:
+    # Configuración principal - configuración en el archivo .env
+#    expiration-minutes: ${REFRESH_TOKEN_EXPIRATION_MINUTES:10080}  # 7 días
+#    max-tokens-per-user: ${REFRESH_TOKEN_MAX_PER_USER:5}
+#    auto-cleanup-enabled: ${REFRESH_TOKEN_AUTO_CLEANUP:true}
+
+    # Configuración de limpieza automática
+    cleanup:
+      enabled: ${REFRESH_TOKEN_CLEANUP_ENABLED:true}
+      cron: ${REFRESH_TOKEN_CLEANUP_CRON:0 0 * * * *}  # Cada hora
+    # Configuración de estadísticas
+    stats:
+      enabled: ${REFRESH_TOKEN_STATS_ENABLED:true}
+      cron: ${REFRESH_TOKEN_STATS_CRON:0 0 */6 * * *}  # Cada 6 horas
+
+    # Configuración de limpieza profunda
+    deep-cleanup:
+      enabled: ${REFRESH_TOKEN_DEEP_CLEANUP_ENABLED:true}
+      cron: ${REFRESH_TOKEN_DEEP_CLEANUP_CRON:0 0 2 * * SUN}  # Domingos 2 AM
+      inactive-days-threshold: ${REFRESH_TOKEN_INACTIVE_DAYS:30}
+
+    # Configuración de seguridad
+    security-check:
+      enabled: ${REFRESH_TOKEN_SECURITY_CHECK_ENABLED:true}
+      cron: ${REFRESH_TOKEN_SECURITY_CHECK_CRON:0 0 8 * * *}  # Diario 8 AM
+      suspicious-device-threshold: ${REFRESH_TOKEN_SUSPICIOUS_THRESHOLD:3}
+
+    # Configuración de scheduling
+    scheduling:
+      enabled: ${REFRESH_TOKEN_SCHEDULING_ENABLED:true}
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -176,7 +211,8 @@ springdoc:
     path: /swagger-ui.html
     enabled: true
     operationsSorter: method
-    tagsSorter: alpha
+#    tagsSorter: alpha
+    tags-sorter: alpha
     display-request-duration: true
     groups-order: desc
   show-actuator: true

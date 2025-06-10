@@ -19,12 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -34,7 +29,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
-    private final CorsConfigurationSource corsConfigurationSource; // ¡Inyecta el bean de CORS!
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,17 +40,20 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos
+                        // ============== ENDPOINTS PÚBLICOS ==============
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
 
-                        // Endpoints de solo lectura - permitir a todos los autenticados
+                        // ============== ENDPOINTS DE SOLO LECTURA ==============
+                        // Permitir a todos los autenticados
                         .requestMatchers(HttpMethod.GET, "/api/v1/tortas/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ocasiones/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/imagenes/**").authenticated()
 
-                        // Endpoints de escritura - solo ADMIN y USER
+                        // ============== ENDPOINTS DE GESTIÓN BÁSICA ==============
+                        // Solo ADMIN y USER pueden crear/modificar
                         .requestMatchers(HttpMethod.POST, "/api/v1/tortas/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/tortas/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/tortas/**").hasAnyRole("ADMIN", "USER")
@@ -67,7 +65,21 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/imagenes/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/imagenes/**").hasAnyRole("ADMIN", "USER")
 
-                        // Cualquier otra petición debe estar autenticada
+                        // ============== GESTIÓN DE TOKENS ==============
+                        // Usuarios pueden gestionar sus propias sesiones
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/tokens/mis-sesiones").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/auth/tokens/mi-sesion/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/auth/tokens/mis-sesiones").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/tokens/verificar").authenticated()
+
+                        // Administradores pueden gestionar todas las sesiones
+                        .requestMatchers("/api/v1/auth/tokens/admin/**").hasRole("ADMIN")
+
+                        // ============== ADMINISTRACIÓN AVANZADA ==============
+                        // Solo administradores
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        // ============== CUALQUIER OTRA PETICIÓN ==============
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
@@ -76,10 +88,23 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // Versión deprecada
+//    @Bean
+//    public AuthenticationProvider authenticationProvider() {
+//        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+//        authProvider.setUserDetailsService(userDetailsService);
+//        authProvider.setPasswordEncoder(passwordEncoder());
+//        return authProvider;
+//    }
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        // La recomendación es pasar UserDetailsService en el constructor y luego setear el PasswordEncoder.
+        // Aunque la recomendación es de setPasswordEncoder(), la forma más idiomática con el constructor
+        // es pasar ambos si el constructor lo permite o usar el patrón builder si se ofrece.
+        // Sin embargo, para DaoAuthenticationProvider, el constructor más adecuado para evitar la advertencia
+        // es el que recibe UserDetailsService y luego se llama a setPasswordEncoder.
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -93,23 +118,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOrigins(Arrays.asList(
-//                "http://localhost:3000",
-//                "http://localhost:4200",
-//                "http://localhost:8080"
-//        ));
-//        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        configuration.setAllowedHeaders(List.of("*"));
-//        configuration.setExposedHeaders(Arrays.asList("Authorization", "Location", "Content-Type"));
-//        configuration.setAllowCredentials(true);
-//        configuration.setMaxAge(3600L);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", configuration);
-//        return source;
-//    }
 }
