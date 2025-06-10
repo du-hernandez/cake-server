@@ -21,7 +21,7 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
     Optional<RolEntity> findByNombre(String nombre);
     List<RolEntity> findByActivo(boolean activo);
 
-    // ✅ MÉTODO BÁSICO: Buscar por prioridad
+    // Buscar por prioridad
     List<RolEntity> findByPrioridadLessThanEqualOrderByPrioridadAsc(Integer prioridad);
 
     // Búsqueda con fetch join para permisos
@@ -50,26 +50,24 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "WHERE r.permisos IS EMPTY OR SIZE(r.permisos) = 0")
     List<RolEntity> findWithoutPermisos();
 
-    // ✅ CORREGIDO: Roles sin usuarios - consulta nativa más eficiente
-    @Query(value = "SELECT r FROM roles r " +
-            "WHERE r.nombre NOT IN (" +
-            "  SELECT DISTINCT ur.rol FROM usuario_roles ur" +
-            ")", nativeQuery = true)
-    @SuppressWarnings("SqlResolve")
+    // ✅ CORREGIDO: Roles sin usuarios - consulta JPQL
+    @Query("SELECT r FROM RolEntity r " +
+            "WHERE r.id NOT IN (" +
+            "  SELECT DISTINCT ur.id FROM UsuarioEntity u " +
+            "  JOIN u.roles ur" +
+            ")")
     List<RolEntity> findWithoutUsers();
 
-    // ✅ CORREGIDO: Usuarios por rol - consulta JPQL
+    // ✅ CORREGIDO: Usuarios por rol - consulta JPQL mejorada
     @Query("SELECT u FROM UsuarioEntity u " +
-            "WHERE :rolNombre MEMBER OF u.roles")
+            "JOIN u.roles r " +
+            "WHERE r.nombre = :rolNombre")
     List<UsuarioEntity> findUsersByRolNombre(@Param("rolNombre") String rolNombre);
 
-    // ✅ CORREGIDO: Roles por usuario - consulta directa
+    // ✅ CORREGIDO: Roles por usuario - consulta corregida
     @Query("SELECT r FROM RolEntity r " +
-            "WHERE r.nombre IN (" +
-            "  SELECT ur FROM UsuarioEntity u " +
-            "  JOIN u.roles ur " +
-            "  WHERE u.id = :usuarioId" +
-            ")")
+            "JOIN UsuarioEntity u ON r MEMBER OF u.roles " +
+            "WHERE u.id = :usuarioId")
     List<RolEntity> findRolesByUserId(@Param("usuarioId") Long usuarioId);
 
     // Verificar si rol tiene permiso específico
@@ -78,7 +76,7 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "WHERE r.id = :rolId AND rp.id = :permisoId")
     boolean rolHasPermiso(@Param("rolId") Integer rolId, @Param("permisoId") Integer permisoId);
 
-    // ✅ CORREGIDO: Estadísticas de roles
+    // ✅ CORREGIDO: Estadísticas de roles - consulta JPQL
     @Query("SELECT " +
             "'total' as tipo, COUNT(r) as cantidad FROM RolEntity r " +
             "UNION ALL " +
@@ -87,10 +85,10 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "SELECT 'inactivos' as tipo, COUNT(r) as cantidad FROM RolEntity r WHERE r.activo = false " +
             "UNION ALL " +
             "SELECT 'conPermisos' as tipo, COUNT(DISTINCT r) as cantidad FROM RolEntity r " +
-            "JOIN r.permisos rp " +
+            "WHERE SIZE(r.permisos) > 0 " +
             "UNION ALL " +
             "SELECT 'sinPermisos' as tipo, COUNT(r) as cantidad FROM RolEntity r " +
-            "WHERE r.permisos IS EMPTY")
+            "WHERE SIZE(r.permisos) = 0")
     List<Object[]> getRolEstadisticas();
 
     // Contadores específicos
@@ -109,13 +107,12 @@ public interface RolRepository extends JpaRepository<RolEntity, Integer> {
             "FROM RolEntity r WHERE r.prioridad = :prioridad AND r.id != :excludeId")
     boolean existsByPrioridadAndIdNot(@Param("prioridad") int prioridad, @Param("excludeId") Integer excludeId);
 
-    // ✅ CORREGIDO: Roles más utilizados - consulta nativa
-    @Query(value = "SELECT ur.rol as nombre, COUNT(ur.usuario_id) as cantidad " +
-            "FROM usuario_roles ur " +
-            "INNER JOIN roles r ON ur.rol = r.nombre " +
-            "GROUP BY ur.rol " +
+    // ✅ CORREGIDO: Roles más utilizados - consulta nativa simplificada
+    @Query(value = "SELECT r.nombre, COUNT(ur.usuario_id) as cantidad " +
+            "FROM roles r " +
+            "LEFT JOIN usuario_roles ur ON r.id = ur.rol_id " +
+            "GROUP BY r.id, r.nombre " +
             "ORDER BY cantidad DESC", nativeQuery = true)
-    @SuppressWarnings("SqlResolve")
     List<Object[]> findMostUsedRoles();
 
     // Buscar por nombre exacto (case insensitive)
