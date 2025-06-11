@@ -46,7 +46,7 @@ spring:
   # JPA/Hibernate para desarrollo
   jpa:
     hibernate:
-      ddl-auto: create-drop  # ✅ CAMBIO: De create-drop a validate
+      ddl-auto: update  # ✅ CAMBIO: De create-drop a validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
