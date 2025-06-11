@@ -153,56 +153,14 @@ public class UsuarioPersistenceAdapter implements UsuarioPersistencePort {
     public UsuarioEstadisticas getUsuarioEstadisticas() {
         Object[] stats = usuarioRepository.getUsuarioEstadisticas();
 
-        log.info("ESTADISTICAS DE USUARIO: {}", stats);
+        Object[] statsData = (stats[0] == null) ? new Object[0] : (Object[]) stats[0];
 
-//        // Extraer valores del array
-//        long total = ((Number) stats[0]).longValue();
-//        long activos = ((Number) stats[1]).longValue();
-//        long inactivos = ((Number) stats[2]).longValue();
-//        long sinRoles = ((Number) stats[3]).longValue();
-//        long conMultiplesRoles = ((Number) stats[4]).longValue();
-
-        long total = 0;
-        long activos = 0;
-        long inactivos = 0;
-        long sinRoles = 0;
-        long conMultiplesRoles = 0;
-
-        // Validar y extraer el valor de 'total'
-        if (stats.length > 0 && stats[0] instanceof Number) {
-            total = ((Number) stats[0]).longValue();
-        } else if (stats.length > 0 && stats[0] == null) {
-            // Si es null, lo tratamos como 0 o manejamos la lógica específica
-            total = 0; // O lanzas una excepción personalizada, o registras un warning
-        }
-
-        // Validar y extraer el valor de 'activos'
-        if (stats.length > 1 && stats[1] instanceof Number) {
-            activos = ((Number) stats[1]).longValue();
-        } else if (stats.length > 1 && stats[1] == null) {
-            activos = 0;
-        }
-
-        // Validar y extraer el valor de 'inactivos'
-        if (stats.length > 2 && stats[2] instanceof Number) {
-            inactivos = ((Number) stats[2]).longValue();
-        } else if (stats.length > 2 && stats[2] == null) {
-            inactivos = 0;
-        }
-
-        // Validar y extraer el valor de 'sinRoles'
-        if (stats.length > 3 && stats[3] instanceof Number) {
-            sinRoles = ((Number) stats[3]).longValue();
-        } else if (stats.length > 3 && stats[3] == null) {
-            sinRoles = 0;
-        }
-
-        // Validar y extraer el valor de 'conMultiplesRoles'
-        if (stats.length > 4 && stats[4] instanceof Number) {
-            conMultiplesRoles = ((Number) stats[4]).longValue();
-        } else if (stats.length > 4 && stats[4] == null) {
-            conMultiplesRoles = 0;
-        }
+        // Extraer valores del array
+        long total = statsData[0] == null ? 0 : ((Number) statsData[0]).longValue();
+        long activos = statsData[1] == null ? 0 : ((Number) statsData[1]).longValue();
+        long inactivos = statsData[2] == null ? 0 : ((Number) statsData[2]).longValue();
+        long sinRoles = statsData[3] == null ? 0 : ((Number) statsData[3]).longValue();
+        long conMultiplesRoles = statsData[4] == null ? 0 : ((Number) statsData[4]).longValue();
 
         // Calcular estadísticas de tiempo
         LocalDateTime ahora = LocalDateTime.now();
@@ -211,8 +169,14 @@ public class UsuarioPersistenceAdapter implements UsuarioPersistencePort {
         long ultimosDias30 = usuarioRepository.countCreatedAfter(ahora.minusDays(30));
 
         return new UsuarioEstadisticas(
-                total, activos, inactivos, sinRoles, conMultiplesRoles,
-                ultimasHoras24, ultimosDias7, ultimosDias30
+                total,
+                activos,
+                inactivos,
+                sinRoles,
+                conMultiplesRoles,
+                ultimasHoras24,
+                ultimosDias7,
+                ultimosDias30
         );
     }
 }

@@ -68,7 +68,7 @@ spring:
 
   # ✅ CORRECCIÓN: Habilitar Flyway para desarrollo
   flyway:
-    enabled: true  # ✅ CAMBIO: De false a true
+    enabled: false  # ✅ CAMBIO: De false a true
     baseline-on-migrate: true
     locations: classpath:db/migration
     schemas: public

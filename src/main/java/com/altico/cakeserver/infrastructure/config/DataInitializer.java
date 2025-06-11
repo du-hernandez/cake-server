@@ -140,6 +140,13 @@ public class DataInitializer {
             crearRolSiNoExiste(rolService, "ROLE_ANALYST",
                     "Analista - Acceso a reportes y estadísticas", 85);
 
+            // ROLES DEFINIDOS POR DEFECTO PARA EL SISTEMA
+            crearRolSiNoExiste(rolService, "ROLE_SUPER_ADMIN", "Super Administrador con todos los permisos", 1);
+            crearRolSiNoExiste(rolService, "ROLE_ADMIN", "Administrador del sistema", 10);
+            crearRolSiNoExiste(rolService, "ROLE_MANAGER", "Gerente con permisos de gestión", 50);
+            crearRolSiNoExiste(rolService, "ROLE_USER", "Usuario regular con permisos básicos", 100);
+            crearRolSiNoExiste(rolService, "ROLE_VIEWER", "Solo lectura", 500);
+
             // Asignar permisos específicos a roles (ejemplo para BAKER)
             try {
                 var rolBaker = rolService.obtenerPorNombre("ROLE_BAKER");
@@ -426,18 +433,28 @@ public class DataInitializer {
 
         // Estadísticas de tokens
         var tokenStats = refreshTokenService.obtenerEstadisticas();
-        log.info("   🔑 Tokens activos: {}", tokenStats.tokensActivos());
+        log.info("   📊 Total Tokens: {}", tokenStats.totalTokens());
+        log.info("   🟢 Tokens Activos: {}", tokenStats.tokensActivos());
+        log.info("   🔴 Tokens Expirados: {}", tokenStats.tokensExpirados());
+        log.info("   🚫 Tokens Revocados: {}", tokenStats.tokensRevocados());
+        log.info("   ⏳ Tokens Por Expirar en 24h: {}", tokenStats.tokensPorExpirar24h());
+        log.info("   👤 Sesiones Únicas: {}", tokenStats.sesionesUnicas());
+        log.info("   📱 Dispositivos Únicos: {}", tokenStats.dispositivosUnicos());
+        log.info("   📈 Promedio sesiones por Usuario: {}", tokenStats.promedioSesionesPorUsuario());
+
 
         // Top ocasiones más populares
+        List<Map<String, Object>> ocasionesPopulares = ocasionService.obtenerOcasionesMasPopulares(3);
         log.info("   🏆 TOP 3 OCASIONES MÁS POPULARES:");
-        ocasionService.obtenerOcasionesMasPopulares(3).forEach(stat -> {
+        ocasionesPopulares.forEach(stat -> {
             log.info("      • {}: {} tortas asociadas",
                     stat.get("nombre"), stat.get("cantidadTortas"));
         });
 
         // Usuarios por rol
-        log.info("   👤 DISTRIBUCIÓN DE USUARIOS POR ROL:");
         var usuarioStats = usuarioService.obtenerEstadisticas();
+        log.info("   👤 DISTRIBUCIÓN DE USUARIOS POR ROL:");
+        log.info("      • Usuarios totales: {}", usuarioStats.totalUsuarios());
         log.info("      • Usuarios activos: {}", usuarioStats.usuariosActivos());
         log.info("      • Usuarios inactivos: {}", usuarioStats.usuariosInactivos());
         log.info("      • Sin roles asignados: {}", usuarioStats.usuariosSinRoles());
@@ -471,7 +488,10 @@ public class DataInitializer {
                                         String email, String password, Set<String> roles, boolean activo) {
         try {
             if (!service.existeUsername(username)) {
+                log.info("No existe el Usuario: {}. A continuación se creará", username);
                 service.crearUsuario(new CreateUsuarioCommand(username, email, password, activo, roles));
+                UsuarioCompleto usuarioCompleto = service.obtenerPorUsername(username);
+                log.info("Usuario completo creado: {}", usuarioCompleto);
             }
         } catch (Exception e) {
             log.debug("Usuario ya existe: {}", username);

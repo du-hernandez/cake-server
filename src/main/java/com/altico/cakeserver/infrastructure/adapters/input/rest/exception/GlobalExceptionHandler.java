@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -553,5 +554,16 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    // Agregar manejo específico para errores de base de datos
+    @ExceptionHandler(SQLException.class)
+    public ResponseEntity<ErrorResponse> handleDatabaseError(SQLException ex) {
+        // Log técnico interno
+        log.error("Database error: {}", ex.getMessage(), ex);
+
+        // Respuesta genérica al usuario
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(501, "Error de base de datos", "Error interno del sistema", "/"));
     }
 }
