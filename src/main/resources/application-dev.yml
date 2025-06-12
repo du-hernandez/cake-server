@@ -1,0 +1,203 @@
+# src/main/resources/application-dev.yml
+# Configuración para DESARROLLO - CORREGIDA
+
+# Configuración del servidor
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: ${ERROR_INCLUDE_STACKTRACE:on_param}
+    include-exception: true
+    whitelabel:
+      enabled: false
+
+spring:
+  application:
+    name: inventory-service
+
+  # Configuración de Spring MVC
+  mvc:
+  web:
+    resources:
+      add-mappings: true
+
+  config:
+    activate:
+      on-profile: dev
+
+  # Base de datos - desarrollo
+  datasource:
+    url: jdbc:postgresql://${DB_HOST_DEV:localhost}:${DB_PORT_DEV:5432}/${DB_NAME_DEV:inventory_db}
+    username: ${DB_USERNAME_DEV:postgres}
+    password: ${DB_PASSWORD_DEV:password}
+    driver-class-name: org.postgresql.Driver
+
+    # Configuración de HikariCP (Pool de conexiones)
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+      pool-name: InventoryHikariPool
+
+  # ============== CORRECCIÓN PRINCIPAL ==============
+  # JPA/Hibernate para desarrollo
+  jpa:
+    hibernate:
+      ddl-auto: update  # ✅ CAMBIO: De create-drop a validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: true  # true solo en desarrollo
+        open-in-view: false  # Mejor práctica para evitar lazy loading issues
+        use_sql_comments: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+        # Cache de segundo nivel (si usas Redis)
+        cache:
+          use_second_level_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+
+  # ✅ CORRECCIÓN: Habilitar Flyway para desarrollo
+  flyway:
+    enabled: false  # ✅ CAMBIO: De false a true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: public
+    validate-on-migrate: true
+    clean-disabled: false  # Permitir limpiar BD en desarrollo
+    # ✅ NUEVO: Configuración adicional para desarrollo
+    baseline-version: "0"
+    baseline-description: "Base migration"
+    out-of-order: false
+
+  # Configuración de Redis (Cache)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}  # Vacío si no tiene password
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000  # 1 hora en millisegundos
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: inventory_dev_
+
+  # DevTools activo
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+    add-properties: false
+
+# Logging detallado para desarrollo
+logging:
+  level:
+    root: INFO
+    com.altico.cakeserver: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+    org.flywaydb: DEBUG  # ✅ NUEVO: Para debug de Flyway
+    web: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/inventory-service.log
+
+# Actuator - todos los endpoints expuestos
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,mappings,auditevents,flyway
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    flyway:  # ✅ NUEVO: Endpoint para monitorear Flyway
+      enabled: true
+  info:
+    env:
+      enabled: true
+
+# Mensaje personalizado
+app:
+  environment: "DEVELOPMENT"
+  debug: true
+
+  # Configuración de administración
+  admin:
+    # Límites de seguridad
+    max-login-attempts: 5
+    lockout-duration-minutes: 30
+    session-timeout-minutes: 30
+    max-concurrent-sessions: 3
+
+    # Configuración de tokens
+    max-refresh-tokens-per-user: 5
+    token-cleanup-interval-hours: 24
+    suspicious-activity-threshold: 10
+
+    # Configuración de auditoría
+    audit-retention-days: 90
+    audit-cleanup-enabled: true
+    audit-sensitive-operations: true
+
+    # Configuración de roles
+    default-user-role: ROLE_USER
+    role-hierarchy-enabled: true
+
+    # Configuración de permisos
+    permission-sync-enabled: true
+    permission-auto-discovery: true
+
+  # Configuración refresh token
+  refresh-token:
+    cleanup:
+      enabled: ${REFRESH_TOKEN_CLEANUP_ENABLED:true}
+      cron: ${REFRESH_TOKEN_CLEANUP_CRON:0 0 * * * *}  # Cada hora
+    stats:
+      enabled: ${REFRESH_TOKEN_STATS_ENABLED:true}
+      cron: ${REFRESH_TOKEN_STATS_CRON:0 0 */6 * * *}  # Cada 6 horas
+    deep-cleanup:
+      enabled: ${REFRESH_TOKEN_DEEP_CLEANUP_ENABLED:true}
+      cron: ${REFRESH_TOKEN_DEEP_CLEANUP_CRON:0 0 2 * * SUN}  # Domingos 2 AM
+      inactive-days-threshold: ${REFRESH_TOKEN_INACTIVE_DAYS:30}
+    security-check:
+      enabled: ${REFRESH_TOKEN_SECURITY_CHECK_ENABLED:true}
+      cron: ${REFRESH_TOKEN_SECURITY_CHECK_CRON:0 0 8 * * *}  # Diario 8 AM
+      suspicious-device-threshold: ${REFRESH_TOKEN_SUSPICIOUS_THRESHOLD:3}
+    scheduling:
+      enabled: ${REFRESH_TOKEN_SCHEDULING_ENABLED:true}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    groups-order: desc
+  show-actuator: true

@@ -38,10 +38,37 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <!-- Hibernate JCache -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-hateoas</artifactId>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-jcache</artifactId>
         </dependency>
+
+        <!-- Ehcache como implementación de JCache -->
+        <dependency>
+            <groupId>org.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <classifier>jakarta</classifier>
+        </dependency>
+
+        <!-- API de JCache -->
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+        </dependency>
+
+        <!-- Carga las variables de .env -->
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>spring-dotenv</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-hateoas</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
@@ -62,6 +89,13 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Dependencies to testcontainers -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
@@ -70,7 +104,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>1.21.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -89,6 +122,33 @@
             <artifactId>archunit-junit5</artifactId>
             <version>1.4.1</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+            <version>3.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
